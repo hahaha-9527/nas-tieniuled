@@ -114,8 +114,77 @@ PAGE = r"""<!DOCTYPE html>
     --shadow-lg:0 2px 6px rgba(20,28,40,.05), 0 20px 40px -16px rgba(20,28,40,.18);
     --r:16px;
   }
+
+  /* ---------- dark theme ---------- */
+  [data-theme="dark"]{
+    --bg:#0d141f; --bg2:#0b111b; --card:rgba(23,32,46,.82);
+    --line:#27313f; --line2:#1b2433;
+    --text:#e7edf6; --muted:#94a3ba; --muted2:#67768d;
+    --accent:#5b86f7; --accent2:#86a8ff; --accent-soft:#15233c;
+    --green:#19b56a; --green-soft:#0f2a1d; --amber:#f0ab2e; --amber-soft:#2a2113;
+    --shadow:0 1px 2px rgba(0,0,0,.18), 0 8px 24px -8px rgba(0,0,0,.42);
+    --shadow-lg:0 2px 6px rgba(0,0,0,.22), 0 20px 40px -16px rgba(0,0,0,.55);
+  }
+  [data-theme="dark"] body{
+    background:
+      radial-gradient(1100px 460px at 12% -8%, #15203a 0%, rgba(21,32,58,0) 62%),
+      radial-gradient(900px 420px at 96% 4%, #10302a 0%, rgba(16,48,42,0) 58%),
+      linear-gradient(180deg,var(--bg2),var(--bg) 58%);
+  }
+  [data-theme="dark"] .card{background:var(--card)}
+  [data-theme="dark"] .pill{background:var(--card);border-color:var(--line)}
+  [data-theme="dark"] .kbd{background:#16202e;border-color:var(--line);color:var(--muted)}
+  [data-theme="dark"] button{background:#172231;border-color:var(--line);color:var(--text)}
+  [data-theme="dark"] button:hover{background:#1e2b3d;border-color:#33425a}
+  [data-theme="dark"] button.primary{background:linear-gradient(180deg,#4a7bf8,#3766eb);border-color:#3766eb;color:#fff}
+  [data-theme="dark"] button.primary:hover{background:linear-gradient(180deg,#4074f6,#2f5fe0)}
+  [data-theme="dark"] button.warn{color:#ff9b90;border-color:#5a2c28;background:#241615}
+  [data-theme="dark"] input[type=number],[data-theme="dark"] input[type=text]{
+    background:#0f1825;color:var(--text);border-color:var(--line)}
+  [data-theme="dark"] .seg{background:#131c29;border-color:var(--line)}
+  [data-theme="dark"] .seg button{color:#9fb0c8}
+  [data-theme="dark"] .seg button:hover{background:#1e2b3d}
+  [data-theme="dark"] .slot{background:linear-gradient(180deg,#16202e,#111a26);border-color:var(--line)}
+  [data-theme="dark"] .led.off,[data-theme="dark"] .led.idle.off{background:#2b3645}
+  [data-theme="dark"] .disks tbody tr:hover{background:#16202e}
+  [data-theme="dark"] .prefill button{background:#131c29;color:var(--muted)}
+  [data-theme="dark"] .prefill button:hover{color:var(--accent);border-color:#33425a;background:#1a2636}
+
+  /* ---------- theme toggle (top-right) ---------- */
+  .themebtn{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:10px;font-weight:540}
+  .theme-ico{display:inline-flex;width:16px;height:16px;align-items:center;justify-content:center}
+  .theme-ico svg{width:16px;height:16px}
+  .theme-txt{font-size:12.5px;font-weight:520}
+
+  /* ---------- responsive (phone) ---------- */
+  @media(max-width:600px){
+    html,body{overflow-x:hidden;max-width:100%}
+    .wrap{padding:12px 12px 50px}
+    .card{padding:13px}
+    .stage{padding:14px;gap:14px}
+    .stageName{min-width:0;gap:11px}
+    header{gap:8px;margin-bottom:16px}
+    .logo{width:38px;height:38px;border-radius:11px}
+    h1{font-size:17px}
+    .hdright{width:100%;flex-wrap:nowrap;gap:6px;margin-left:0}
+    .pill{padding:6px 10px;font-size:11.5px;gap:5px;min-width:0;flex:1 1 auto;justify-content:center}
+    .iconbtn{width:32px;height:32px;flex:0 0 auto}
+    .theme-txt{display:none}
+    .themebtn{padding:8px;flex:0 0 auto}
+    .slot{min-width:0}
+    .nextInfo{font-size:11.5px;min-width:0}
+    .field label,.pgrid .field label{min-width:84px}
+    input[type=number]{width:84px}
+    .cols2{gap:14px}
+    .legend{grid-template-columns:1fr}
+    .disks{display:block;overflow-x:auto}
+    .disks th,.disks td{padding:7px 5px;font-size:12px;white-space:nowrap}
+    #demoRow{grid-template-columns:1fr}
+  }
   *{box-sizing:border-box}
   html,body{height:100%}
+  /* 桌面端整体缩放（手机端不受影响），对齐 fanctl 视觉比例 */
+  @media(min-width:601px){body{zoom:1.25}}
   body{
     margin:0;color:var(--text);
     background:
@@ -140,7 +209,7 @@ PAGE = r"""<!DOCTYPE html>
     box-shadow:0 0 12px 4px rgba(255,255,255,.75)}
   h1{font-size:19.5px;margin:0;font-weight:680;letter-spacing:.1px;
     display:flex;align-items:center;gap:9px}
-  .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .sub{display:none}
   .hdright{margin-left:auto;display:flex;align-items:center;gap:9px;flex-wrap:wrap}
   .pill{display:flex;align-items:center;gap:8px;background:var(--card);backdrop-filter:blur(8px);
     border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:12.5px;
@@ -179,6 +248,12 @@ PAGE = r"""<!DOCTYPE html>
   .card h2 .tag.g{color:#0d7a45;background:var(--green-soft)}
   .hint{color:var(--muted);font-size:12.5px;margin:0 0 15px;line-height:1.62}
   .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  /* 灯效测试：2x2 网格，槽位数字对齐 */
+  #demoRow{display:grid;grid-template-columns:1fr 1fr;gap:9px 16px}
+  .democell{display:flex;align-items:center;gap:8px;flex-wrap:nowrap}
+  .democell .sm{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;padding-left:4px;padding-right:4px}
+  .democell .chip{flex:0 0 auto}
+  @media(max-width:600px){#demoRow{grid-template-columns:1fr}}
   .sep{height:1px;background:var(--line2);margin:16px 0}
   .cols2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
   @media(max-width:760px){.cols2{grid-template-columns:1fr}}
@@ -294,7 +369,7 @@ PAGE = r"""<!DOCTYPE html>
   .disks tr:last-child td{border-bottom:none}
   .disks tbody tr:hover{background:#fafcff}
   .mono{font-family:ui-monospace,Consolas,"Courier New",monospace}
-  .chip{display:inline-flex;align-items:center;gap:5px;border-radius:7px;padding:2.5px 9px;
+  .chip{display:inline-flex;align-items:center;gap:5px;border-radius:7px;padding:2.5px 9px;white-space:nowrap;
     font-size:11.5px;font-weight:620;background:var(--accent-soft);color:var(--accent)}
   .chip.gray{background:#f1f4f9;color:var(--muted)}
   .chip.green{background:var(--green-soft);color:#0d7a45}
@@ -316,7 +391,8 @@ PAGE = r"""<!DOCTYPE html>
     opacity:0;pointer-events:none;transition:.26s cubic-bezier(.2,.8,.2,1);
     box-shadow:0 16px 40px -10px rgba(20,28,40,.5);z-index:9;max-width:80vw}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  .foot{color:var(--muted2);font-size:11.5px;margin-top:24px;text-align:center;line-height:2}
+  .foot{color:var(--muted2);font-size:12px;margin-top:20px;margin-bottom:26px;text-align:center;line-height:2;letter-spacing:.4px}
+  .foot .hl{color:var(--accent);font-weight:600}
   .kbd{background:#fff;border:1px solid var(--line);border-radius:6px;padding:2px 7px;
     font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--muted)}
   .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
@@ -328,11 +404,13 @@ PAGE = r"""<!DOCTYPE html>
     <div class="logo"><i></i></div>
     <div>
       <h1>Zero1 Pro 灯控面板</h1>
-      <div class="sub">C3 灯语 · 空闲心跳/长亮 · 读写快闪 · 掉盘慢闪 · 夜间定时</div>
     </div>
     <div class="hdright">
-      <div class="pill" id="nightPill" style="display:none"></div>
       <div class="pill"><span id="dot" class="dot"></span><span id="svcText">连接中…</span></div>
+      <button class="themebtn" id="themeBtn" title="切换深色 / 浅色模式" onclick="toggleTheme()">
+        <span class="theme-ico" id="themeIco"></span>
+        <span class="theme-txt" id="themeTxt">深色模式</span>
+      </button>
       <button class="iconbtn" title="立即刷新" onclick="refresh()">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.1" stroke-linecap="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
@@ -423,8 +501,8 @@ PAGE = r"""<!DOCTYPE html>
         <div class="fgroup">
           <div class="lbl">夜间电源灯做什么</div>
           <div class="seg sm" id="nightSeg">
-            <button data-v="off" onclick="setNight('off')">彻底熄灭</button>
             <button data-v="heartbeat" onclick="setNight('heartbeat')">极简心跳</button>
+            <button data-v="off" onclick="setNight('off')">彻底熄灭</button>
           </div>
           <div class="hint" style="margin:9px 0 0;font-size:12px">
             极简心跳：每 10 秒亮 80ms，占空比 &lt;1%，暗处几乎无感但能看出机器还活着
@@ -487,11 +565,11 @@ PAGE = r"""<!DOCTYPE html>
       <div class="sep"></div>
       <div class="row">
         <span style="color:var(--muted);font-size:12.5px;min-width:78px">常用方案</span>
+        <button class="sm" id="pbNone" onclick="preset('none')">关闭定时</button>
         <button class="sm" id="pbAllOff" onclick="preset('all-off')">夜晚全灭</button>
-        <button class="sm" id="pbPwHb" onclick="preset('power-heartbeat')">全灭 + 电源灯心跳</button>
         <button class="sm" id="pbPwOnly" onclick="preset('power-only')">只灭电源灯</button>
         <button class="sm" id="pbDiskOnly" onclick="preset('disk-only')">只灭硬盘灯</button>
-        <button class="sm" id="pbNone" onclick="preset('none')">关闭定时</button>
+        <button class="sm" id="pbPwHb" onclick="preset('power-heartbeat')">全灭 + 电源灯心跳</button>
       </div>
     </div>
   </div>
@@ -546,36 +624,8 @@ PAGE = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <div class="grid">
-    <!-- ============ 硬盘表 ============ -->
-    <div class="card wide">
-      <h2>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>
-        硬盘 / 槽位 / 实时速率
-      </h2>
-      <p class="hint">速率是引擎每 0.2 秒采样的实测值；映射可用 <span class="mono">ledctl map &lt;槽位&gt; &lt;设备&gt;</span> 调整</p>
-      <table class="disks">
-        <thead><tr><th style="width:64px">槽位</th><th>设备</th><th style="width:92px">容量</th>
-          <th style="width:74px">在线</th><th style="width:130px">当前灯态</th><th>实时速率</th></tr></thead>
-        <tbody id="diskBody"><tr><td colspan="6" style="color:var(--muted)">读取中…</td></tr></tbody>
-      </table>
-    </div>
-
-    <!-- ============ 输出 ============ -->
-    <div class="card wide">
-      <h2>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-          stroke-linecap="round"><path d="M4 17l5-5-5-5"/><path d="M12 19h8"/></svg>
-        执行输出
-      </h2>
-      <p class="hint">每次操作的原始返回，排错时看这里</p>
-      <pre id="log">等待操作…</pre>
-    </div>
-  </div>
-
   <div class="foot">
-    © 2026 灯控中心 v1.0.7 · Crafted by 西了个瓜
+    © 2026 灯控中心 <span class="hl">v1.0.7</span> · Crafted by 西了个瓜
   </div>
 </div>
 <div id="toast"></div>
@@ -589,7 +639,7 @@ function toast(msg, bad){
   clearTimeout(t._h);
   t._h = setTimeout(function(){ t.classList.remove('show'); }, 2800);
 }
-function logOut(txt){ document.getElementById('log').textContent = txt || '(无输出)'; }
+function logOut(txt){ /* 执行输出卡片已移除，保留空函数避免调用点报错 */ }
 function setSeg(id, val){
   var seg = document.getElementById(id);
   if(!seg) return;
@@ -778,13 +828,7 @@ function apply(d){
   pwLed.className = 'led ' + cls;
   $('pwLedSub').textContent = sub;
 
-  /* 夜间 / 熄灯 徽标 */
-  var np = $('nightPill');
-  if(d.night.power){
-    np.style.display = 'flex';
-    np.className = 'pill badge' + (d.night.power_mode === 'heartbeat' ? ' hb' : '');
-    np.textContent = '夜间的灯' + (d.night.power_mode === 'heartbeat' ? ' · 电源灯心跳中' : ' · 电源灯已熄灭');
-  } else { np.style.display = 'none'; }
+  /* 夜间 / 熄灯 徽标（已按需求移除） */
   var ntag = $('nightTag');
   if(nightOn){
     ntag.className = 'tag g';
@@ -880,25 +924,6 @@ function apply(d){
       + '<div><div class="dev">' + dev + '</div>' + rate + '</div></div></div>';
   });
   wrap.innerHTML = html || '<div style="color:var(--muted);font-size:12.5px">未发现硬盘</div>';
-
-  /* 硬盘表 */
-  var rows = slots.map(function(x){
-    var mt = MODE_TEXT[x.mode] || [x.mode,'gray'];
-    var rate = x.dev ? (x.rate >= 1 ? x.rate.toFixed(1)+' MB/s' : Math.round(x.rate*1024)+' KB/s') : '-';
-    var pct = Math.max(0, Math.min(100, (x.rate||0) / 150 * 100));
-    var online = x.dev ? (x.online ? '<span class="chip green">在线</span>'
-                                   : '<span class="chip red">离线</span>')
-                       : '<span class="chip gray">—</span>';
-    return '<tr><td><span class="chip">' + (x.slot + 1) + '</span></td>'
-      + '<td class="mono">' + (x.dev ? esc(x.dev) : '<span style="color:var(--muted)">未使用</span>') + '</td>'
-      + '<td>' + (x.gb ? x.gb + ' GB' : '-') + '</td>'
-      + '<td>' + online + '</td>'
-      + '<td><span class="chip ' + mt[1] + '">' + mt[0] + '</span></td>'
-      + '<td><div class="bar-wrap"><span class="mono" style="min-width:66px">' + rate + '</span>'
-      + '<span class="bar"><i style="width:' + pct.toFixed(1) + '%"></i></span></div></td></tr>';
-  });
-  $('diskBody').innerHTML = rows.length ? rows.join('')
-    : '<tr><td colspan="6" style="color:var(--muted)">未发现硬盘</td></tr>';
 }
 
 /* ---------- actions ---------- */
@@ -906,14 +931,13 @@ var DEMO_MODES = [['blink','闪'],['solid','常亮'],['alarm','告警']];
 (function buildDemo(){
   var html = '';
   for(var s=0;s<4;s++){
-    if(s === 2) html += '</div><div class="row" style="margin-top:9px">';
-    html += '<span class="chip">' + (s + 1) + '</span>';
+    html += '<div class="democell"><span class="chip">' + (s + 1) + '</span>';
     DEMO_MODES.forEach(function(m){
       html += '<button class="sm" onclick="act(\'demo\',{slot:'+s+',mode:\''+m[0]+'\'})">'+m[1]+'</button>';
     });
-    html += '<span style="width:12px"></span>';
+    html += '</div>';
   }
-  $('demoRow').innerHTML = '<div class="row">' + html + '</div>';
+  $('demoRow').innerHTML = html;
 })();
 
 function busyOn(){ Array.prototype.forEach.call(document.querySelectorAll('button'), function(b){ b.disabled = true; }); }
@@ -1005,6 +1029,28 @@ var inpPending = {};
   var el = $(id);
   if(el) el.addEventListener('input', function(){ inpPending[id] = true; });
 });
+
+/* ---------- dark / light theme ---------- */
+var SUN_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.2M12 19.8V22M2 12h2.2M19.8 12H22M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M19.4 4.6l-1.6 1.6M6.2 17.8l-1.6 1.6"/></svg>';
+var MOON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a7 7 0 0 0 10 10Z"/></svg>';
+function applyTheme(t){
+  document.documentElement.setAttribute('data-theme', t);
+  var ico = $('themeIco'), txt = $('themeTxt');
+  if(!ico) return;
+  if(t === 'dark'){ ico.innerHTML = SUN_SVG; txt.textContent = '浅色模式'; }
+  else { ico.innerHTML = MOON_SVG; txt.textContent = '深色模式'; }
+}
+function toggleTheme(){
+  var t = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(t);
+  try{ localStorage.setItem('led-theme', t); }catch(e){}
+}
+(function(){
+  var saved = null;
+  try{ saved = localStorage.getItem('led-theme'); }catch(e){}
+  var t = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  applyTheme(t);
+})();
 
 refresh();
 setInterval(refresh, 3000);
