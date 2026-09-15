@@ -1,16 +1,21 @@
 services:
   tieniuled:
-    image: python:3.12-slim-bookworm
-    container_name: tieniuled-app
-    privileged: true
-    network_mode: host
-    restart: always
+    # 默认走国内镜像加速（Docker Hub 直连经常超时：Client.Timeout exceeded）。
+    # 若该加速源不可用，换下面任意一行再试；海外网络可换回官方 python:3.12-slim-bookworm
+    image: docker.m.daocloud.io/library/python:3.12-slim-bookworm
+    # image: docker.1ms.run/library/python:3.12-slim-bookworm
+    # image: dockerpull.cn/library/python:3.12-slim-bookworm
+    # image: docker.1panel.live/library/python:3.12-slim-bookworm
+    container_name: tieniuled
+    restart: unless-stopped
+    privileged: true          # 引擎要直接写 I/O 端口与 SATA 控制器 LED 寄存器
+    network_mode: host        # 面板端口直接可用，也不与厂商服务抢端口
     working_dir: /opt/app
     volumes:
-      - /sys:/sys
-      - ./data:/data
-      - ./app:/opt/app:ro
-      - /etc/localtime:/etc/localtime:ro
+      - /sys:/sys                                    # 读取 SATA 控制器与 hwmon
+      - ./app:/opt/app:ro                            # 程序文件（compose 项目目录下）
+      - ./data:/data                                 # 配置与运行状态，跨升级保留
+      - /etc/localtime:/etc/localtime:ro             # 时区：夜间计划按宿主时区判定
       - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
     environment:
       - TZ=Asia/Shanghai
