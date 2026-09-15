@@ -575,11 +575,7 @@ PAGE = r"""<!DOCTYPE html>
   </div>
 
   <div class="foot">
-    命令行入口：<span class="kbd">ledctl status</span>
-    <span class="kbd">ledctl disk breath wave</span>
-    <span class="kbd">ledctl schedule preset power-heartbeat</span><br>
-    面板监听 0.0.0.0:8977，局域网内任意设备可访问<br>
-    © 2026 灯控中心 v1.0.6 · Crafted by 西了个瓜
+    © 2026 灯控中心 v1.0.7 · Crafted by 西了个瓜
   </div>
 </div>
 <div id="toast"></div>
