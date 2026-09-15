@@ -48,6 +48,7 @@
 | `docker-compose.yml` | Compose 编排（特权 + host 网络 + `/sys` 挂载 + 时区） |
 | `tools/register_icon.py` | 注册铁牛OS / ZeroNAS 桌面"灯控中心"图标 + 快捷方式 |
 | `tools/verify.py` | 安装 / 重启后一键验证 |
+| `icon.png` | 应用图标（`register_icon.py` 部署到 NAS 对外网页目录用） |
 | `CHANGELOG.md` | 版本更新记录 |
 | `LICENSE` | MIT 开源许可 |
 
