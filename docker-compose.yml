@@ -1,0 +1,20 @@
+services:
+  tieniuled:
+    image: python:3.12-slim-bookworm
+    container_name: tieniuled-app
+    privileged: true
+    network_mode: host
+    restart: always
+    working_dir: /opt/app
+    volumes:
+      - /sys:/sys
+      - ./data:/data
+      - ./app:/opt/app:ro
+      - /etc/localtime:/etc/localtime:ro
+      - /usr/share/zoneinfo:/usr/share/zoneinfo:ro
+    environment:
+      - TZ=Asia/Shanghai
+      - LED_CONFIG=/data/nas-led.json
+      - LED_RUNTIME=/data/runtime.json
+      - LED_STATUS=/data/status.json
+    command: ["sh", "/opt/app/run.sh"]
