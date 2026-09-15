@@ -55,6 +55,8 @@ ledctl - 铁牛NAS Zero1 Pro 灯控命令行（v2，配套 led_engine 引擎）
                       这种情况直接往 1000~2000 调试试
 """
 
+import contextlib
+import fcntl
 import json
 import os
 import re
@@ -104,6 +106,37 @@ PRESETS = {
 
 # --------------------------------------------------------------- 读写
 
+WIN_ITEM_RE = re.compile(r"^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$")
+
+
+def bad_window(w):
+    """单个时间段校验；返回错误文案或 None"""
+    m = WIN_ITEM_RE.match((w or "").strip())
+    if not m:
+        return "格式不对（应形如 22:00-07:00）"
+    h1, m1, h2, m2 = [int(x) for x in m.groups()]
+    if h1 > 23 or h2 > 23 or m1 > 59 or m2 > 59:
+        return "超出范围（小时 00-23，分钟 00-59）"
+    if h1 * 60 + m1 == h2 * 60 + m2:
+        return "起止相同，不会生效"
+    return None
+
+
+@contextlib.contextmanager
+def conf_lock():
+    """配置都是"读-改-写"，多个 ledctl 并发（面板会同时保存两组时间表）
+    会互相覆盖，用文件锁串行化。"""
+    f = open(CONF + ".lock", "a+")
+    try:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        yield
+    finally:
+        try:
+            fcntl.flock(f, fcntl.LOCK_UN)
+        finally:
+            f.close()
+
+
 def load(path, default):
     try:
         with open(path) as f:
@@ -128,11 +161,12 @@ def touch_runtime(**kw):
 
 def touch_config(**kw):
     """按 'a.b' 路径写配置，并让运行时文件跳动以触发引擎重载"""
-    cfg = load(CONF, {}) or {}
-    for path, val in kw.items():
-        sect, key = path.split(".", 1)
-        cfg.setdefault(sect, {})[key] = val
-    save(CONF, cfg)
+    with conf_lock():
+        cfg = load(CONF, {}) or {}
+        for path, val in kw.items():
+            sect, key = path.split(".", 1)
+            cfg.setdefault(sect, {})[key] = val
+        save(CONF, cfg)
     touch_runtime(reload=int(time.time() * 1000))
 
 
@@ -356,14 +390,15 @@ def do_schedule(argv):
             print("可用方案: %s" % " | ".join(PRESETS))
             return 1
         p = PRESETS[argv[1]]
-        cfg = load(CONF, {}) or {}
-        for g, en in (("power", p["power"]), ("disk", p["disk"])):
-            s = cfg.setdefault("schedule", {}).setdefault(g, {})
-            s["enabled"] = en
-            if en and not s.get("windows"):
-                s["windows"] = ["22:00-07:00"]
-        cfg.setdefault("night", {})["power_mode"] = p["mode"]
-        save(CONF, cfg)
+        with conf_lock():
+            cfg = load(CONF, {}) or {}
+            for g, en in (("power", p["power"]), ("disk", p["disk"])):
+                s = cfg.setdefault("schedule", {}).setdefault(g, {})
+                s["enabled"] = en
+                if en and not s.get("windows"):
+                    s["windows"] = ["22:00-07:00"]
+            cfg.setdefault("night", {})["power_mode"] = p["mode"]
+            save(CONF, cfg)
         touch_runtime(reload=int(time.time() * 1000))
         print("已套用方案: %s" % argv[1])
         return 0
@@ -373,16 +408,30 @@ def do_schedule(argv):
             print("组只能是 power 或 disk")
             return 1
         en = argv[2] == "on"
-        cfg = load(CONF, {}) or {}
-        s = cfg.setdefault("schedule", {}).setdefault(grp, {})
-        s["enabled"] = en
+        wins = None
         if len(argv) >= 4:
-            wins = [w.strip() for w in argv[3].replace(";", ",").split(",") if w.strip()]
-            s["windows"] = wins
-        save(CONF, cfg)
+            raw = argv[3].strip()
+            if raw in ("", "-", "none", "clear"):
+                wins = []          # 显式清空时间段
+            else:
+                wins = [w.strip() for w in raw.replace(";", ",").split(",") if w.strip()]
+                for w in wins:
+                    err = bad_window(w)
+                    if err:
+                        print("时间段 %s 不合法: %s" % (w, err))
+                        return 1
+        with conf_lock():
+            cfg = load(CONF, {}) or {}
+            s = cfg.setdefault("schedule", {}).setdefault(grp, {})
+            s["enabled"] = en
+            if wins is not None:
+                s["windows"] = wins
+            save(CONF, cfg)
         touch_runtime(reload=int(time.time() * 1000))
-        print("%s 定时 -> %s  %s" % (grp, "开启" if en else "关闭",
-                                     " ".join(s.get("windows") or [])))
+        shown = " ".join(s.get("windows") or []) or "(空)"
+        print("%s 定时 -> %s  %s" % (grp, "开启" if en else "关闭", shown))
+        if en and not s.get("windows"):
+            print("提示: 已启用但时间段为空，当前不会有任何效果")
         return 0
     print("用法: ledctl schedule set <power|disk> on|off [窗口] | schedule preset <方案>")
     return 1

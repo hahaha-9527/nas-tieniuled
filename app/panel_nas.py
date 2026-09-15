@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 铁牛NAS Zero1 Pro 灯控面板 v3（本地网页界面）
-运行后浏览器打开 http://127.0.0.1:8977
+运行后浏览器打开 http://<NAS地址>:8977
 
 与同容器内的 ledctl / led_engine 引擎协作控制:
   电源灯 -> Super I/O 端口 0xA01 bit1 (常亮 / 熄灭 / 呼吸)
@@ -16,11 +16,35 @@ import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-LEDCTL = "/usr/local/sbin/ledctl"
+# 容器内 ledctl 是 /opt/app 下的 Python 脚本（只读挂载、无执行位，不能直接执行）。
+# 宿主机部署可用环境变量 LEDCTL 覆盖为宿主机上的 ledctl 路径。
+LEDCTL = os.environ.get("LEDCTL") or "python3 /opt/app/ledctl.py"
 SVC = "nas-led-engine"
 PORT = 8977
 
 WIN_RE = re.compile(r"^[0-9:\-,;\s]*$")
+WIN_ITEM_RE = re.compile(r"^(\d{1,2}):(\d{2})\s*-\s*(\d{1,2}):(\d{2})$")
+
+
+def bad_window(wins):
+    """逐个校验时间段，返回错误文案或 None。
+
+    面板原来只查字符集，"25:00-30:00" 这类能过校验 → 写进配置 → 引擎
+    parse_windows 静默跳过 → 永远不生效，用户只看到"设了没用"。
+    """
+    for w in (wins or "").replace(";", ",").split(","):
+        w = w.strip()
+        if not w:
+            continue
+        m = WIN_ITEM_RE.match(w)
+        if not m:
+            return "时间段 %s 格式不对（应形如 22:00-07:00）" % w
+        h1, m1, h2, m2 = [int(x) for x in m.groups()]
+        if h1 > 23 or h2 > 23 or m1 > 59 or m2 > 59:
+            return "时间段 %s 超出范围（小时 00-23，分钟 00-59）" % w
+        if h1 * 60 + m1 == h2 * 60 + m2:
+            return "时间段 %s 起止相同，不会生效" % w
+    return None
 
 
 def remote(cmd, timeout=45):
@@ -551,10 +575,10 @@ PAGE = r"""<!DOCTYPE html>
   </div>
 
   <div class="foot">
-    SSH 命令行入口：<span class="kbd">ledctl status</span>
+    命令行入口：<span class="kbd">ledctl status</span>
     <span class="kbd">ledctl disk breath wave</span>
     <span class="kbd">ledctl schedule preset power-heartbeat</span><br>
-    面板仅监听 127.0.0.1，只有本机能访问
+    面板监听 0.0.0.0:8977，局域网内任意设备可访问
   </div>
 </div>
 <div id="toast"></div>
@@ -822,6 +846,9 @@ function apply(d){
   /* 下次切换 */
   var ni = $('nextInfo'), lines = [];
   if(nightOn){ lines.push('<b>当前处于夜间时段</b>'); }
+  if(d.disk && d.disk.switch_cfg === 'off'){
+    lines.push('硬盘灯总开关为「<b>熄灭</b>」，需切到「跟随系统」后定时才会改变显示');
+  }
   [['电源灯', pwRanges, d.schedule.power.enabled], ['硬盘灯', dkRanges, d.schedule.disk.enabled]].forEach(function(x){
     if(!x[2] || !x[1].length){ lines.push(x[0] + '定时：未启用'); return; }
     var nb = nextBoundary(x[1], nowMin);
@@ -913,13 +940,17 @@ function preset(p){ act('schedule_preset', {preset: p}); }
 function fillWin(id, v){ $(id).value = v; }
 function saveSch(){
   busyOn();
-  var a = fetch('/api/schedule_set', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({group:'power', state: segVal('pwSchSeg') || 'off',
-                            windows: $('pwWin').value})});
-  var b = fetch('/api/schedule_set', {method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({group:'disk', state: segVal('dkSchSeg') || 'off',
-                            windows: $('dkWin').value})});
-  Promise.all([a,b]).then(function(rs){ return Promise.all(rs.map(function(r){return r.json();})); })
+  function saveOne(g, segId, winId){
+    return fetch('/api/schedule_set', {method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({group:g, state: segVal(segId) || 'off',
+                              windows: $(winId).value})})
+      .then(function(r){ return r.json(); });
+  }
+  /* 必须串行：每次保存都是「读配置-改-写」，并发时后写者会用旧快照
+     把前者的改动冲掉（丢更新） */
+  saveOne('power','pwSchSeg','pwWin')
+    .then(function(d1){ return saveOne('disk','dkSchSeg','dkWin')
+      .then(function(d2){ return [d1,d2]; }); })
     .then(function(ds){
       logOut(ds.map(function(d){ return d.output || d.error || ''; }).join('\n'));
       var bad = ds.filter(function(d){ return !d.ok; });
@@ -1081,11 +1112,18 @@ class Handler(BaseHTTPRequestHandler):
             wins = (body.get("windows") or "").strip()
             if wins and not WIN_RE.match(wins):
                 return self._json(False, "时间段格式不合法（示例 22:00-07:00,13:00-14:00）")
+            bad = bad_window(wins)
+            if bad:
+                return self._json(False, bad)
             if wins:
                 cmd = '%s schedule set %s %s "%s"' % (LEDCTL, grp, state, wins)
             else:
-                cmd = "%s schedule set %s %s" % (LEDCTL, grp, state)
-            msg = ("%s时间表已" % ("电源灯" if grp == "power" else "硬盘灯")) + ("启用" if state == "on" else "停用")
+                # 传空串 = 显式清空时间段（原来"清空输入框再保存"会保留旧值，永远删不掉）
+                cmd = '%s schedule set %s %s ""' % (LEDCTL, grp, state)
+            who = "电源灯" if grp == "power" else "硬盘灯"
+            msg = ("%s时间表已" % who) + ("启用" if state == "on" else "停用")
+            if state == "on" and not wins:
+                msg += "（时间段为空，不会生效）"
 
         elif path == "/api/param":
             items = body.get("items") or {}
@@ -1171,7 +1209,17 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(404, json.dumps({"ok": False, "error": "not found"}))
 
         ok, out = remote(cmd)
-        self._json(ok, msg, out)
+        if ok:
+            self._json(True, msg, out)
+        else:
+            # 失败时绝不能把"已启用/已关闭"这类成功文案回给界面：
+            # 历史 bug 就是 ledctl 路径失效 + 回成功文案 = 静默失败
+            tail = ""
+            for line in (out or "").splitlines()[::-1]:
+                if line.strip():
+                    tail = line.strip()[:160]
+                    break
+            self._json(False, "执行失败：" + (tail or "无输出"), out)
 
 
 PAGE = PAGE.replace("__FAVICON_B64__", FAVICON_B64)

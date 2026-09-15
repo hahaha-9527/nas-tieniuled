@@ -165,6 +165,8 @@ def parse_windows(wins):
         s, e = sh * 60 + sm, eh * 60 + em
         if s == e:
             continue
+        if not (0 <= s < 1440 and 0 <= e < 1440):
+            continue        # 越界时间(如 25:00)会静默失效且极难排查，直接丢弃
         out.append((s, e))
     return out
 
